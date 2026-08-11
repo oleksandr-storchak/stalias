@@ -22,26 +22,100 @@
     <header>
       <img src="logo.png" height="200" id="logo" onclick="setRandomNames()" alt="Alias logo">
     </header>
-    <main class="glass-panel home-panel">
-      <div class="matchup" id="matchup">
-        <div class="matchup-side side-1">
-          <span class="score" id="team1Score"></span>
-          <input type="text" id="team1Name" aria-label="Назва першої команди" placeholder="Придумайте назву команди">
+    <!-- both screens live on one snap track, so moving between them is a slide
+         rather than a page load; scrolling is driven only by the buttons -->
+    <div class="screen-track" id="screenTrack">
+      <main class="glass-panel home-panel screen" id="homeScreen">
+        <div class="matchup">
+          <div class="matchup-side side-1">
+            <span class="score" id="team1Score"></span>
+            <input type="text" id="team1Name" aria-label="Назва першої команди"
+              placeholder="Придумайте назву команди">
+          </div>
+          <span class="matchup-seam" aria-hidden="true"><span class="seam-colon">:</span></span>
+          <div class="matchup-side side-2">
+            <span class="score" id="team2Score"></span>
+            <input type="text" id="team2Name" aria-label="Назва другої команди"
+              placeholder="Придумайте назву команди">
+          </div>
         </div>
-        <span class="matchup-seam" aria-hidden="true"><span class="seam-colon">:</span></span>
-        <div class="matchup-side side-2">
-          <span class="score" id="team2Score"></span>
-          <input type="text" id="team2Name" aria-label="Назва другої команди" placeholder="Придумайте назву команди">
+        <div class="home-actions">
+          <button class="button start-btn" id="startBtn" onclick="startGame()">Почати!</button>
+          <button class="button" id="continueBtn" onclick="continueGame()">Продовжити!</button>
         </div>
-      </div>
-      <button class="button start-btn" onclick="startGame()">Почати!</button>
-      <button class="button" id="continueBtn" onclick="continueGame()">Продовжити!</button>
-    </main>
+      </main>
+      <main class="glass-panel game-panel screen" id="gameScreen">
+        <h2 class="team-title">
+          <span id="teamName"></span>
+          <span id="teamScore"></span>
+        </h2>
+        <div class="word">
+          <p id="word" class="is-hidden"></p>
+        </div>
+        <div class="timer is-hidden" id="timer"></div>
+        <div class="game-content">
+          <button id="beginContinuedbtn" class="button" onclick="beginGame()">Почати!</button>
+          <!-- the turn row is a sibling of the control button in the same grid
+               cell, so the two crossfade without resizing each other -->
+          <div class="turn-actions is-hidden" id="turnActions">
+            <button id="skipWordbtn" class="button icon-button skip" onclick="skipWord()" aria-label="Пропустити">
+              <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 6l-12 12" />
+                <path d="M6 6l12 12" />
+              </svg>
+            </button>
+            <!-- one button holds both states, so pausing never moves or reshapes it -->
+            <button id="pauseBtn" class="button icon-button pause" onclick="togglePause()" aria-label="Пауза">
+              <svg class="pause-icon" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 5v14" />
+                <path d="M15 5v14" />
+              </svg>
+              <svg class="resume-icon" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"
+                fill="currentColor" stroke="none">
+                <path d="M7 4v16l13 -8z" />
+              </svg>
+            </button>
+            <button id="nextWordbtn" class="button icon-button next" onclick="nextWord()" aria-label="Наступне">
+              <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12l5 5l10 -10" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </main>
+    </div>
     <footer class="glass-panel footer-panel">
       <p id="copyright"></p>
       <a href="admin.html">Адмін</a>
     </footer>
   </div>
+  <dialog class="app-dialog results" id="results" aria-labelledby="resultsTitle">
+    <form method="dialog">
+      <span class="confirm-emoji" aria-hidden="true">🏆</span>
+      <p id="resultsTitle">Гру завершено!</p>
+      <div class="results-scores">
+        <div class="results-row winner">
+          <span id="teamWinnerName"></span>
+          <span id="teamWinnerScore"></span>
+        </div>
+        <div class="results-row">
+          <span id="teamLoserName"></span>
+          <span id="teamLoserScore"></span>
+        </div>
+      </div>
+      <menu>
+        <button value="ok" class="confirm" aria-label="Гаразд" autofocus onclick="gameOver()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12l5 5l10 -10" />
+          </svg>
+        </button>
+      </menu>
+    </form>
+  </dialog>
   <script src="db.js"></script>
   <script src="scripts.js"></script>
 </body>

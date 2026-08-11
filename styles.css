@@ -6,12 +6,10 @@
   --glass-layer: linear-gradient(160deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.04) 55%, rgba(255, 255, 255, 0.01) 100%);
   --glass-fill: rgba(22, 14, 42, 0.45);
   --glass-border: rgba(255, 255, 255, 0.28);
-  --glass-glow: rgba(120, 210, 255, 0.55);
   --glass-shadow: 0 28px 60px -24px rgba(11, 0, 35, 0.75);
   --text-primary: #f7f8ff;
   --text-secondary: rgba(235, 239, 255, 0.7);
   --accent: #9cd6ff;
-  --accent-strong: #ff8bf4;
   --radius-lg: 32px;
   --radius-md: 22px;
   --radius-pill: 999px;
@@ -170,13 +168,6 @@ header img {
   filter: drop-shadow(0 24px 45px rgba(129, 182, 255, 0.55));
 }
 
-.tagline {
-  font-size: clamp(1rem, 1.5vw, 1.2rem);
-  letter-spacing: 0.04em;
-  color: var(--text-primary);
-  text-shadow: 0 0 20px rgba(120, 200, 255, 0.6);
-}
-
 .glass-panel {
   position: relative;
   width: 100%;
@@ -215,14 +206,44 @@ header img {
   z-index: 1;
 }
 
+/* the two screens sit side by side on a snap track. the user never scrolls it
+   directly — scroll-snap only guarantees each screen lands exactly in frame
+   when a button calls scrollIntoView */
+.screen-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 100%;
+  width: 100%;
+  overflow: hidden;
+  scroll-snap-type: x mandatory;
+  /* pairs with header's margin-top: auto to centre the logo + panel group in
+     the space above the footer */
+  margin-bottom: auto;
+}
+
+/* both screens share one implicit grid row, so the taller one sets the height
+   for both and the slide reads as a single card moving */
+.screen {
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+  grid-row: 1;
+}
+
 .home-panel {
   display: flex;
   flex-direction: column;
   gap: clamp(1.5rem, 2.5vw, 2.5rem);
   align-items: center;
-  /* pairs with header's margin-top: auto to centre the logo + panel group in
-     the space above the footer */
-  margin-bottom: auto;
+}
+
+/* the actions block always reserves room for both buttons, so revealing
+   "continue" never changes the card's height */
+.home-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  margin-top: auto;
 }
 
 .matchup {
@@ -234,9 +255,10 @@ header img {
 
   /* the score row belongs to a game in progress, so it is revealed by the
      same condition that reveals the continue button: a saved game exists.
-     the seam keeps its grid column either way, so the two sides stay put */
+     the seam keeps its grid column either way, so the two sides stay put.
+     visibility rather than display, so the row always reserves its height */
   .score {
-    display: none;
+    visibility: hidden;
   }
 
   .matchup-seam .seam-colon,
@@ -248,6 +270,8 @@ header img {
     font-size: clamp(2.5rem, 7vw, 4rem);
     font-weight: 700;
     line-height: 1;
+    /* an empty score would collapse its line box and change the card height */
+    min-height: 1em;
     color: var(--text-primary);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
@@ -353,8 +377,7 @@ header img {
   box-shadow: 0 1px 0 0 rgba(255, 156, 246, 0.9), 0 12px 24px -18px rgba(255, 139, 244, 0.85);
 }
 
-.button,
-.hud-chip {
+.button {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -381,58 +404,51 @@ header img {
   backdrop-filter: blur(24px);
 }
 
-.button::before,
-.hud-chip::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  /* the sweep is painted by moving the gradient inside a static box, so nothing
-     ever extends past the button's rounded edge and no clipping is needed —
-     overflow/clip-path would both cut off the offset focus ring */
-  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0));
-  background-repeat: no-repeat;
-  background-size: 60% 100%;
-  background-position: -70% 0;
-  transition: background-position 420ms ease;
-  pointer-events: none;
-}
-
-.button:hover::before,
-.hud-chip:hover::before {
-  background-position: 170% 0;
-}
-
-.button:hover,
-.hud-chip:hover {
+.button:hover {
   border-color: rgba(158, 134, 255, 0.9);
   box-shadow: 0 25px 45px -20px rgba(158, 134, 255, 0.75);
 }
 
 /* on press the border clears and the ring takes over, offset outward */
-.button:active,
-.hud-chip:active {
+.button:active {
   border-color: rgba(158, 134, 255, 0);
   outline-color: rgba(158, 134, 255, 0.75);
   outline-offset: 5px;
 }
 
-.start-btn {
+/* both are primary actions in the same stack, so they share one width */
+.start-btn,
+#continueBtn {
   width: 100%;
 }
 
+/* hidden but still occupying its row, so the card keeps one height in both
+   states and the two screens stay the same size */
 #continueBtn {
-  width: min(260px, 100%);
-  align-self: center;
-  display: none;
+  visibility: hidden;
+}
+
+/* a finished game shows its final score but offers no "continue" */
+body[data-finished="true"] {
+  .score {
+    visibility: visible;
+  }
+
+  .matchup-seam .seam-colon,
+  .matchup-seam::before {
+    opacity: 1;
+  }
 }
 
 /* a saved game is the single state that reveals the score row and the
    continue button; JS only records the state, CSS decides how it looks */
 body[data-saved="true"] {
-  #continueBtn,
+  #continueBtn {
+    visibility: visible;
+  }
+
   .score {
-    display: block;
+    visibility: visible;
   }
 
   .matchup-seam .seam-colon,
@@ -470,219 +486,185 @@ body[data-saved="true"] {
 .game-panel {
   display: flex;
   flex-direction: column;
-  gap: clamp(1.5rem, 2.5vw, 2.75rem);
-}
-
-.game-toolbar {
-  display: flex;
-  width: 100%;
   align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  flex-wrap: wrap;
+  gap: clamp(1rem, 2.5vw, 1.75rem);
 }
 
-.back-button,
-.end-game-button {
-  background: linear-gradient(135deg, rgba(61, 46, 158, 0.85), rgba(147, 91, 255, 0.65));
-}
-
-.sound-toggle {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(156, 214, 255, 0.2));
-  color: var(--text-primary);
-  border-color: rgba(255, 255, 255, 0.22);
-  padding-inline: 1.8rem;
-  font-size: 0.95rem;
-  text-transform: none;
-  letter-spacing: 0.04em;
-}
-
-.sound-toggle .sound-glow {
-  position: absolute;
-  inset: -30%;
-  background: radial-gradient(circle at 50% 50%, rgba(156, 214, 255, 0.6), rgba(156, 214, 255, 0));
-  opacity: 0.35;
-  filter: blur(14px);
-  transition: opacity var(--transition);
-}
-
-.sound-toggle:not(.is-muted) .sound-glow {
-  animation: pulseGlow 3.2s ease-in-out infinite;
-}
-
-.sound-toggle.is-muted {
-  background: linear-gradient(135deg, rgba(50, 44, 80, 0.75), rgba(80, 63, 124, 0.55));
-}
-
-.sound-toggle.is-muted .sound-glow {
-  opacity: 0.1;
-}
-
-.sound-toggle .sound-label {
-  position: relative;
-  z-index: 1;
-}
-
-.floating-card {
-  position: relative;
-  width: 100%;
-  padding: clamp(1.15rem, 2vw, 1.75rem);
-  border-radius: var(--radius-md);
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.04));
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(28px);
-  box-shadow: 0 24px 48px -28px rgba(10, 0, 40, 0.8);
-  transition: transform var(--transition), box-shadow var(--transition);
-}
-
-.floating-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 30px 60px -30px rgba(140, 210, 255, 0.75);
-}
-
+/* the panel is the card; the regions inside it are plain space */
 .team-title {
   display: flex;
   justify-content: center;
-  gap: 0.75rem;
-  font-size: clamp(1.2rem, 2vw, 1.6rem);
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  /* holds its line before the team name is set, so the card never grows.
+     one line only — a wrapped long name would resize the card mid-game */
+  min-height: 1.5em;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: clamp(1.1rem, 2vw, 1.4rem);
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--text-primary);
-}
-
-.team-title span {
-  text-shadow: 0 0 25px rgba(156, 214, 255, 0.65);
-  font-weight: 700;
 }
 
 .word {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 140px;
+  width: 100%;
+  /* the word slot holds its height while empty, so nothing shifts between
+     turns or when the round is paused */
+  flex: 1;
+  min-height: clamp(5rem, 18vh, 9rem);
 }
 
+/* the word fades rather than blinking out when a turn pauses or ends */
 .word p {
-  font-size: clamp(2.5rem, 6vw, 3.75rem);
+  transition: opacity var(--transition);
+  font-size: clamp(2rem, 6vw, 3.5rem);
   color: var(--text-primary);
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+  text-align: center;
   text-shadow: 0 0 40px rgba(255, 138, 244, 0.65);
 }
 
 .timer {
-  display: flex;
-  justify-content: center;
-}
-
-.timer #timer {
-  font-size: clamp(2.5rem, 6vw, 3.5rem);
+  transition: opacity var(--transition);
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1;
+  min-height: 1em;
   color: var(--accent);
   font-weight: 600;
-  letter-spacing: 0.18em;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.12em;
   text-shadow: 0 0 30px rgba(156, 214, 255, 0.7);
-  visibility: hidden;
 }
 
+/* fades out but keeps its box, so nothing in the card shifts */
+.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* the control button and the turn row are alternative states of one slot, so
+   they are stacked in a single grid cell: while they crossfade neither steals
+   width from the other, and no button changes size mid-transition */
 .game-content {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
-  align-items: center;
+  width: 100%;
+  margin-top: auto;
+}
+
+.game-content > * {
+  grid-area: 1 / 1;
+}
+
+.turn-actions {
+  display: flex;
   justify-content: center;
+  gap: 1rem;
+  width: 100%;
 }
 
 .game-content .button {
+  min-height: 60px;
+  /* fades with the rest of the row rather than appearing abruptly; the outline
+     timings are the shared press handoff */
+  transition: opacity var(--transition), border-color 110ms ease-in,
+    outline-color 170ms ease-out 110ms,
+    outline-offset 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* the round-control button spans the row on its own */
+#beginContinuedbtn {
+  flex: 1;
+}
+
+/* skip on the left, next on the right — each carries only its icon */
+.icon-button {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.icon-button.skip {
+  background: linear-gradient(135deg, rgba(60, 48, 92, 0.9), rgba(92, 74, 126, 0.7));
+}
+
+.icon-button.next {
+  background: linear-gradient(135deg, rgba(126, 99, 255, 0.9), rgba(255, 129, 235, 0.6));
+}
+
+/* pause is a fixed circle in the middle: the same size and position whether it
+   reads as pause or resume, so toggling never shifts the row */
+.icon-button.pause {
+  flex: 0 0 60px;
+  width: 60px;
+  height: 60px;
+  min-width: 60px;
+  min-height: 60px;
+  padding: 0;
+  border-radius: 50%;
+  aspect-ratio: 1;
+  background: linear-gradient(135deg, rgba(48, 40, 78, 0.9), rgba(74, 62, 106, 0.7));
+}
+
+/* both icons occupy the same grid cell, so swapping them cannot resize the button */
+.icon-button.pause svg {
+  grid-area: 1 / 1;
+}
+
+.icon-button.pause .resume-icon {
+  display: none;
+}
+
+.icon-button.pause.is-paused .pause-icon {
+  display: none;
+}
+
+.icon-button.pause.is-paused .resume-icon {
+  display: block;
+}
+
+/* the results dialog reuses .app-dialog wholesale; only the score list is its
+   own, and it is a touch wider to fit two team names */
+.app-dialog.results {
+  width: min(460px, calc(100% - 2rem));
+}
+
+.results-scores {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
   width: 100%;
-  min-height: 56px;
 }
 
-.shortcut-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  background: linear-gradient(145deg, rgba(18, 10, 38, 0.75), rgba(54, 38, 82, 0.7));
-}
-
-.shortcut-panel h2 {
-  font-size: 1rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
-
-.shortcut-panel ul {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.shortcut-panel li {
+.results-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  font-size: 0.95rem;
+  align-items: baseline;
+  gap: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 1.25rem;
   color: var(--text-secondary);
+
+  &:last-child {
+    border-bottom: none;
+  }
 }
 
-.shortcut-key {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.45rem 0.9rem;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-  font-weight: 600;
-  letter-spacing: 0.1em;
-}
-
-.shortcut-action {
-  letter-spacing: 0.05em;
-}
-
-/* the game's results dialog; the admin dialogs use .app-dialog */
-dialog.results {
-  opacity: 0;
-  transform: translateY(18px) scale(0.98);
-  transition:
-    opacity var(--transition),
-    transform var(--transition),
-    overlay var(--transition) allow-discrete,
-    display var(--transition) allow-discrete;
-}
-
-dialog.results[open] {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  width: min(360px, 90vw);
-  padding: 2.5rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  background: rgba(20, 12, 40, 0.72);
-  box-shadow: 0 40px 70px -35px rgba(14, 0, 44, 0.85);
-  backdrop-filter: blur(30px) saturate(180%);
+/* the winner carries the weight; the runner-up stays quiet */
+.results-row.winner {
+  font-size: 1.6rem;
+  font-weight: 700;
   color: var(--text-primary);
-  opacity: 1;
-  transform: translateY(0) scale(1);
-}
-
-dialog.results::backdrop {
-  background: radial-gradient(circle, rgba(12, 8, 33, 0.65), rgba(4, 2, 12, 0.9));
-  backdrop-filter: blur(12px);
-}
-
-dialog.results button {
-  align-self: center;
-  min-width: 140px;
-}
-
-footer p {
-  color: var(--text-secondary);
+  text-shadow: 0 0 30px rgba(156, 214, 255, 0.55);
 }
 
 @keyframes orbFloat {
@@ -695,25 +677,12 @@ footer p {
   }
 }
 
-@keyframes pulseGlow {
-  0%,
-  100% {
-    opacity: 0.25;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.6;
-    transform: scale(1.12);
-  }
-}
-
 @media (max-width: 768px) {
   body.liquid-theme {
     padding: clamp(1rem, 4vw, 2rem);
   }
 
-  .button,
-  .hud-chip {
+  .button {
     padding: 0.8rem 1.8rem;
     font-size: 0.85rem;
   }
@@ -729,12 +698,6 @@ footer p {
   .score,
   .seam-colon {
     font-size: clamp(2rem, 11vw, 3rem);
-  }
-
-  .team-title {
-    flex-direction: column;
-    text-align: center;
-    gap: 0.25rem;
   }
 
   .footer-panel {

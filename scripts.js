@@ -46,31 +46,78 @@ function onLaunch() {
     if (saved) {
       window.team1Name.value = team1
       window.team2Name.value = team2
-      window.team1Score.innerText = localStorage.getItem(`${team1}_score`) || 0
-      window.team2Score.innerText = localStorage.getItem(`${team2}_score`) || 0
+      const score1 = parseInt(localStorage.getItem(`${team1}_score`)) || 0
+      const score2 = parseInt(localStorage.getItem(`${team2}_score`)) || 0
+      window.team1Score.innerText = score1
+      window.team2Score.innerText = score2
+      // a decided game is derived from the score rather than a stored flag, so
+      // it survives a reload: there is nothing left to continue
+      if (isDecided(score1, score2)) markFinished()
     } else {
       setRandomNames()
     }
+    syncStartButton()
   })
 }
 
+// the round is over for both teams once either has reached the target
+function isDecided(score1, score2) {
+  return score1 >= WINRATE || score2 >= WINRATE
+}
+
+function markFinished() {
+  document.body.dataset.saved = 'false'
+  document.body.dataset.finished = 'true'
+}
+
 function setRandomNames() {
+  // a game in progress owns its team names; shuffling them would orphan the
+  // scores stored against the old names
+  if (document.body.dataset.saved === 'true') return
   window.team1Name.value = getRandomTeamName()
   window.team2Name.value = getRandomTeamName()
 }
 
-function navigateHome() { window.location.href = 'index.html' }
+// both screens are on one snap track, so moving between them is a scroll
+function showScreen(id) {
+  window.screenTrack.scrollTo({
+    left: id === 'gameScreen' ? window.screenTrack.clientWidth : 0,
+    behavior: 'smooth'
+  })
+}
 
-function continueGame() { window.location.href = 'game.html' }
+function continueGame() {
+  showScreen('gameScreen')
+  beforeBegin()
+}
 
 function startGame() {
-  if (localStorage.getItem('team1') != null || localStorage.getItem('team2') != null) {
-    if (window.confirm("Почати нову гру?")) {
-      newGame()
-    }
-  } else {
-    newGame()
+  // with a game in progress the button resets it and stays here, so the user
+  // lands on a clean start screen and chooses when to actually begin
+  if (document.body.dataset.saved === 'true') {
+    resetGame()
+    return
   }
+  newGame()
+}
+
+function resetGame() {
+  localStorage.clear()
+  document.body.dataset.saved = 'false'
+  document.body.dataset.finished = 'false'
+  window.activeTeam = undefined
+  window.started = false
+  window.paused = false
+  window.team1Score.innerText = ''
+  window.team2Score.innerText = ''
+  setRandomNames()
+  syncStartButton()
+}
+
+function syncStartButton() {
+  const saved = document.body.dataset.saved === 'true'
+  const finished = document.body.dataset.finished === 'true'
+  window.startBtn.innerText = saved || finished ? 'Почати нову гру' : 'Почати!'
 }
 
 function newGame() {
@@ -79,52 +126,82 @@ function newGame() {
   if (window.team1Name.value && window.team2Name.value) {
     localStorage.setItem('team1', window.team1Name.value)
     localStorage.setItem('team2', window.team2Name.value)
-    window.location.href = 'game.html'
+    document.body.dataset.saved = 'true'
+    window.activeTeam = undefined
+    window.started = false
+    showScreen('gameScreen')
+    beforeBegin()
   }
 }
-
-function gameButtonClick(e) { window.started ? pauseGame(e) : beginGame(e) }
 
 async function beforeBegin() {
   if (words.length === 0) await loadWords()
   if (window.activeTeam === undefined) window.activeTeam = localStorage.getItem('team1')
   window.teamName.innerText = window.activeTeam || localStorage.getItem('team1')
-  window.teamScore.innerText = ` (${localStorage.getItem(`${window.activeTeam}_score`)})`
-
-  if (localStorage.getItem(`${window.activeTeam}_score`) == null) window.teamScore.innerText = '(0)'
-
-  initializeSoundToggle()
-
-  if (window.started) {
-    window.nextWordbtn.style.display = 'block'
-    window.skipWordbtn.style.display = 'block'
-  } else {
-    window.nextWordbtn.style.display = 'none'
-    window.skipWordbtn.style.display = 'none'
-  }
+  window.teamScore.innerText = ` (${localStorage.getItem(`${window.activeTeam}_score`) || 0})`
+  showTurnButtons(window.started)
 }
+
+// skip and next belong to an active turn; the round-control button owns the row
+// the rest of the time
+// a turn shows skip / pause / next; between turns the control button owns the
+// row. while paused only the pause button stays, now reading as "resume"
+function showTurnButtons(show) {
+  // the turn row and the control button occupy the same grid cell, so only one
+  // of the two is ever shown; display still drives layout, the class the fade
+  const turnRow = show || window.paused
+  setHidden(window.turnActions, !turnRow, 'flex')
+  setHidden(window.beginContinuedbtn, turnRow, 'flex')
+  // while paused only the pause button remains, now reading as "resume"
+  setHidden(window.skipWordbtn, !show, 'grid')
+  setHidden(window.nextWordbtn, !show, 'grid')
+  setHidden(window.pauseBtn, !turnRow, 'grid')
+}
+
+// fades an element out before pulling it from the row, and puts it back in the
+// row a frame before fading in, so both directions have something to animate
+const FADE_MS = 280
+
+function setHidden(el, hidden, display) {
+  clearTimeout(el.fadeTimer)
+  if (hidden) {
+    if (el.style.display === 'none') return
+    el.classList.add('is-hidden')
+    el.fadeTimer = setTimeout(() => { el.style.display = 'none' }, FADE_MS)
+    return
+  }
+  el.style.display = display
+  requestAnimationFrame(() => el.classList.remove('is-hidden'))
+}
+
+function setResumeMode(resuming) {
+  window.pauseBtn.classList.toggle('is-paused', resuming)
+  window.pauseBtn.setAttribute('aria-label', resuming ? 'Продовжити' : 'Пауза')
+}
+
+function togglePause() { window.paused ? beginGame() : pauseGame() }
 
 let timerFn
 
-async function beginGame(e) {
+async function beginGame() {
   if (words.length === 0) await loadWords()
-  e.target.innerText = 'Пауза'
-  window.nextWordbtn.disabled = false
-  window.timer.style.visibility = 'visible'
-  window.nextWordbtn.style.display = 'block'
+  setResumeMode(false)
+  window.timer.classList.remove('is-hidden')
   window.seconds = localStorage.getItem('secondsLeft') || SECONDS
   timerFn = setInterval(() => tick(), 1000)
-  window.word.style.visibility = 'visible'
+  window.word.classList.remove('is-hidden')
   if (!window.started && !window.paused) {
-
     window.word.innerText = getRandomWord()
-    window.word.style.visibility = 'visible'
   }
   if (window.started && window.seconds <= 0) onTurnEnd()
   window.started = true
+  // cleared only after the word check above, which distinguishes a resumed turn
+  // from a fresh one; the button row is re-synced now that the flag is right
+  window.paused = false
+  showTurnButtons(true)
 }
 
-function nextWord(e) {
+function nextWord() {
   window.word.innerText = getRandomWord()
   const score = localStorage.getItem(`${window.activeTeam}_score`) || 0
   localStorage.setItem(`${window.activeTeam}_score`, parseInt(score) + 1)
@@ -132,12 +209,19 @@ function nextWord(e) {
   if (!window.started) onTurnEnd()
 }
 
-function pauseGame(e) {
-  window.nextWordbtn.disabled = true
+// a skipped word costs the turn nothing, so the score is left alone
+function skipWord() {
+  window.word.innerText = getRandomWord()
+  if (!window.started) onTurnEnd()
+}
+
+function pauseGame() {
   window.started = false
   window.paused = true
-  window.word.style.visibility = 'hidden'
-  e.target.innerText = 'Далі'
+  // the word is hidden so nobody keeps guessing while the clock is stopped
+  window.word.classList.add('is-hidden')
+  showTurnButtons(false)
+  setResumeMode(true)
   localStorage.setItem('secondsLeft', window.seconds)
   clearInterval(timerFn)
 }
@@ -156,16 +240,16 @@ function onSecondsEnd() {
   localStorage.removeItem('secondsLeft')
   window.started = false
   window.seconds = SECONDS
-  window.beginContinuedbtn.style.display = 'none'
 }
 
 function onTurnEnd() {
   changeActiveTeam()
   if (checkForVictory()) return
+  window.paused = false
+  setResumeMode(false)
   window.beginContinuedbtn.innerText = 'Почати'
-  window.beginContinuedbtn.style.display = 'block'
-  window.word.style.visibility = 'hidden'
-  window.timer.style.visibility = 'hidden'
+  window.word.classList.add('is-hidden')
+  window.timer.classList.add('is-hidden')
   beforeBegin()
 }
 
@@ -184,63 +268,48 @@ function checkForVictory() {
   const team2 = localStorage.getItem('team2')
   const team1score = parseInt(localStorage.getItem(`${team1}_score`))
   const team2score = parseInt(localStorage.getItem(`${team2}_score`))
-  if (((team1score >= WINRATE) || (team2score >= WINRATE)) && window.endRound) {
-    window.results.open = true
-    window.teamWinnerName.innerText = team1
-    window.teamWinnerScore.innerText = `(${team1score})`
-    window.teamLoserName.innerText = team2
-    window.teamLoserScore.innerText = `(${team2score})`
-    document.querySelector('.team-title').remove()
-    document.querySelector('.word').remove()
-    document.querySelector('.timer').remove()
-    document.querySelector('.game-content').remove()
+  if (isDecided(team1score, team2score) && window.endRound) {
+    // the round is over for good: only a new game follows, so the saved state
+    // goes now and the home screen offers no "continue"
+    const team1Won = team1score >= team2score
+    window.teamWinnerName.innerText = team1Won ? team1 : team2
+    window.teamWinnerScore.innerText = `(${team1Won ? team1score : team2score})`
+    window.teamLoserName.innerText = team1Won ? team2 : team1
+    window.teamLoserScore.innerText = `(${team1Won ? team2score : team1score})`
+    // showModal puts the dialog in the top layer: centred, with a backdrop.
+    // setting .open alone leaves it inline and unpositioned
+    window.results.showModal()
     return true
   }
 }
 
-function initializeSoundToggle() {
-  const toggle = document.querySelector('.sound-toggle')
-  if (!toggle) return
-
-  const saved = localStorage.getItem('soundEnabled') || 'on'
-  const isMuted = saved !== 'on'
-  const label = toggle.querySelector('.sound-label')
-
-  toggle.dataset.state = isMuted ? 'muted' : 'on'
-  toggle.classList.toggle('is-muted', isMuted)
-  toggle.setAttribute('aria-pressed', (!isMuted).toString())
-  if (label) label.innerText = isMuted ? 'Звук вимкнено' : 'Звук увімкнено'
-}
-
-function toggleSound(button) {
-  if (!button) return
-
-  const willEnable = button.dataset.state === 'muted'
-  button.dataset.state = willEnable ? 'on' : 'muted'
-  button.classList.toggle('is-muted', !willEnable)
-  button.setAttribute('aria-pressed', willEnable.toString())
-
-  const label = button.querySelector('.sound-label')
-  if (label) label.innerText = willEnable ? 'Звук увімкнено' : 'Звук вимкнено'
-
-  localStorage.setItem('soundEnabled', willEnable ? 'on' : 'off')
-
-  const glow = button.querySelector('.sound-glow')
-  if (glow) {
-    glow.style.animation = 'none'
-    void glow.offsetHeight
-    glow.style.animation = ''
-  }
-}
-
-function endGame() {
-  if (window.confirm("Завершити гру?")) {
-    localStorage.clear()
-    window.location.href = 'index.html'
-  }
-}
-
+// the game screen is reused rather than reloaded, so its state is reset here
 function gameOver() {
-  localStorage.clear()
-  window.location.href = 'index.html'
+  clearInterval(timerFn)
+  const team1 = localStorage.getItem('team1')
+  const team2 = localStorage.getItem('team2')
+  const finalScores = [
+    localStorage.getItem(`${team1}_score`) || 0,
+    localStorage.getItem(`${team2}_score`) || 0
+  ]
+
+  resetGame()
+
+  // the game is over, so there is nothing to continue — but the final score
+  // stays on screen until a new game replaces it
+  window.team1Name.value = team1
+  window.team2Name.value = team2
+  window.team1Score.innerText = finalScores[0]
+  window.team2Score.innerText = finalScores[1]
+  markFinished()
+  syncStartButton()
+
+  window.word.innerText = ''
+  window.timer.innerText = ''
+  window.teamScore.innerText = ''
+  window.teamName.innerText = ''
+  window.beginContinuedbtn.innerText = 'Почати!'
+  setResumeMode(false)
+  showTurnButtons(false)
+  showScreen('homeScreen')
 }
