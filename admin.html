@@ -1,32 +1,82 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Alias</title>
+  <title>Alias — Слова</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <link rel="icon" href="favicon.png" type="image/png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Amatic+SC&display=swap" rel="stylesheet">
-  <title>Alias Admin</title>
 </head>
+
 <body class="words">
   <section>
-    <ul id="words">
-      /* Words will be added here by JavaScript */
-    </ul>
-    <form>
-      <form-group>
-        <input id="newWord" placeholder="Додати нове слово">
-        <button onclick="addWord()">+</button>
-      </form-group>
+    <ul id="words" data-empty-text="Такого слова ще немає"></ul>
+    <form onsubmit="addWord(); return false;">
+      <input id="newWord" placeholder="Додати нове слово" autocomplete="off" oninput="filterWords()">
+      <button type="submit" aria-label="Додати слово">+</button>
     </form>
   </section>
+  <dialog class="app-dialog" closedby="any" id="confirmDialog" aria-labelledby="confirmWord">
+    <form method="dialog">
+      <p id="confirmWord"></p>
+      <span class="confirm-emoji" aria-hidden="true">🗑️</span>
+      <menu>
+        <button value="cancel" aria-label="Скасувати" autofocus>
+          <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6l-12 12" />
+            <path d="M6 6l12 12" />
+          </svg>
+        </button>
+        <button value="delete" class="danger" aria-label="Видалити">
+          <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12l5 5l10 -10" />
+          </svg>
+        </button>
+      </menu>
+    </form>
+  </dialog>
+  <dialog class="app-dialog" closedby="any" id="editDialog" aria-label="Змінити слово">
+    <form method="dialog">
+      <input id="editWord" autocomplete="off" aria-label="Нова назва слова">
+      <menu>
+        <button value="cancel" aria-label="Скасувати">
+          <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6l-12 12" />
+            <path d="M6 6l12 12" />
+          </svg>
+        </button>
+        <button value="save" class="confirm" aria-label="Зберегти">
+          <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12l5 5l10 -10" />
+          </svg>
+        </button>
+      </menu>
+    </form>
+  </dialog>
+  <dialog class="app-dialog" closedby="any" id="noticeDialog" aria-labelledby="noticeText">
+    <form method="dialog">
+      <span class="confirm-emoji" aria-hidden="true">⚠️</span>
+      <p id="noticeText"></p>
+      <menu>
+        <button value="ok" class="confirm" aria-label="Зрозуміло" autofocus>
+          <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12l5 5l10 -10" />
+          </svg>
+        </button>
+      </menu>
+    </form>
+  </dialog>
   <script src="db.js"></script>
   <script src="admin.js"></script>
 </body>
+
 </html>

@@ -28,6 +28,15 @@
 html,
 body {
   height: 100%;
+  /* the gradient backdrop reads as one surface, so no scrollbar interrupts it */
+  scrollbar-width: none;
+  /* stops the rubber-band bounce that exposes the page behind the gradient */
+  overscroll-behavior: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
 }
 
 body {
@@ -47,6 +56,14 @@ body.liquid-theme {
   padding: clamp(1.5rem, 3vw, 3.5rem);
   background-image: var(--bg-base), var(--bg-overlay);
   background-attachment: fixed;
+}
+
+/* the home screen is sized to fit, so any scroll is overscroll — lock both axes */
+body.home-screen {
+  overflow: hidden;
+  height: 100%;
+  min-height: 100%;
+  touch-action: pan-x pan-y;
 }
 
 body.liquid-theme::before,
@@ -113,12 +130,15 @@ body.liquid-theme::after {
 .container {
   position: relative;
   z-index: 1;
-  width: min(960px, 100%);
+  /* 640px keeps the two name fields at a comfortable reading measure; a full
+     960px stretches each underline far past the words it holds */
+  width: min(640px, 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: clamp(1.5rem, 3vw, 3rem);
-  min-height: min(92vh, 960px);
+  gap: clamp(1.75rem, 4vh, 3.5rem);
+  /* fills the screen so the footer has a bottom to sit against */
+  min-height: 100%;
 }
 
 header {
@@ -127,10 +147,14 @@ header {
   flex-direction: column;
   gap: 1rem;
   align-items: center;
+  margin-top: auto;
 }
 
 header img {
-  max-width: 200px;
+  /* scales with the viewport but never dominates: the panel below is the thing
+     the user acts on, so the mark stays the second-largest element */
+  width: clamp(180px, 42vw, 300px);
+  max-width: 100%;
   height: auto;
   filter: drop-shadow(0 18px 35px rgba(23, 12, 64, 0.7));
   transition: transform var(--transition), filter var(--transition);
@@ -156,7 +180,7 @@ header img {
 .glass-panel {
   position: relative;
   width: 100%;
-  padding: clamp(1.5rem, 3vw, 3rem);
+  padding: clamp(1.25rem, 4vw, 2rem);
   border-radius: var(--radius-lg);
   background: var(--glass-fill);
   border: 1px solid var(--glass-border);
@@ -196,44 +220,137 @@ header img {
   flex-direction: column;
   gap: clamp(1.5rem, 2.5vw, 2.5rem);
   align-items: center;
+  /* pairs with header's margin-top: auto to centre the logo + panel group in
+     the space above the footer */
+  margin-bottom: auto;
 }
 
-.team-form {
+.matchup {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
   gap: clamp(1rem, 2vw, 1.5rem);
   width: 100%;
+
+  /* the score row belongs to a game in progress, so it is revealed by the
+     same condition that reveals the continue button: a saved game exists.
+     the seam keeps its grid column either way, so the two sides stay put */
+  .score {
+    display: none;
+  }
+
+  .matchup-seam .seam-colon,
+  .matchup-seam::before {
+    opacity: 0;
+  }
+
+  .score {
+    font-size: clamp(2.5rem, 7vw, 4rem);
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  .side-1 .score {
+    text-shadow: 0 0 32px rgba(120, 160, 255, 0.55);
+  }
+
+  .side-2 .score {
+    text-shadow: 0 0 32px rgba(255, 139, 244, 0.5);
+  }
 }
 
-.team-input {
+.matchup-side {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.5rem;
+  min-width: 0;
+
+  &.side-2 {
+    text-align: right;
+  }
 }
 
-.team-input input {
+.matchup-seam {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 0 clamp(0.25rem, 1vw, 0.75rem);
+}
+
+.matchup-seam::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.28) 30%,
+      rgba(255, 255, 255, 0.28) 70%,
+      rgba(255, 255, 255, 0) 100%);
+}
+
+.seam-colon {
+  position: relative;
+  font-size: clamp(2.5rem, 7vw, 4rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-secondary);
+  /* align colon to the score row, not the full-height seam */
+  align-self: flex-start;
+}
+
+/* an underline rather than a box: the label above already frames the field, so
+   a second container would only add noise */
+.matchup-side input {
   width: 100%;
-  padding: 1rem 1.25rem;
-  font-size: 1.05rem;
+  padding: 0.5rem 0.25rem;
+  font-size: clamp(1.15rem, 2.5vw, 1.5rem);
+  font-weight: 600;
   color: var(--text-primary);
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(12, 8, 33, 0.55);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 10px 28px -18px rgba(10, 0, 34, 0.9);
-  backdrop-filter: blur(20px);
-  transition: border var(--transition), box-shadow var(--transition), transform var(--transition);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 0;
+  transition: border-color var(--transition), box-shadow var(--transition);
 }
 
-.team-input input::placeholder {
-  color: rgba(244, 246, 255, 0.45);
+.matchup-side input::placeholder {
+  font-weight: 400;
+  font-size: 0.95rem;
+  color: rgba(244, 246, 255, 0.4);
   letter-spacing: 0.05em;
+  transition: color var(--transition);
 }
 
-.team-input input:focus {
+.side-2 input {
+  text-align: right;
+}
+
+.matchup-side input:focus {
   outline: none;
-  border-color: rgba(158, 208, 255, 0.9);
-  box-shadow: 0 10px 35px -12px rgba(127, 200, 255, 0.6), inset 0 0 0 1px rgba(158, 208, 255, 0.7);
-  transform: translateY(-2px);
+}
+
+.matchup-side input:focus::placeholder {
+  color: rgba(244, 246, 255, 0);
+}
+
+/* the underline thickens into each side's own colour on focus */
+.side-1 input:focus {
+  border-bottom-color: rgba(158, 208, 255, 0.9);
+  box-shadow: 0 1px 0 0 rgba(158, 208, 255, 0.9), 0 12px 24px -18px rgba(127, 200, 255, 0.9);
+}
+
+.side-2 input:focus {
+  border-bottom-color: rgba(255, 156, 246, 0.9);
+  box-shadow: 0 1px 0 0 rgba(255, 156, 246, 0.9), 0 12px 24px -18px rgba(255, 139, 244, 0.85);
 }
 
 .button,
@@ -252,8 +369,14 @@ header img {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
-  overflow: hidden;
-  transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+  /* the ring rests flush on the border; on press the border hands off to it */
+  outline: 1px solid rgba(158, 134, 255, 0);
+  outline-offset: 0;
+  transition:
+    box-shadow var(--transition),
+    border-color 110ms ease-in,
+    outline-color 170ms ease-out 110ms,
+    outline-offset 280ms cubic-bezier(0.22, 1, 0.36, 1);
   box-shadow: 0 18px 40px -18px rgba(120, 200, 255, 0.6);
   backdrop-filter: blur(24px);
 }
@@ -262,28 +385,36 @@ header img {
 .hud-chip::before {
   content: "";
   position: absolute;
-  inset: -120% 0;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0));
-  transform: translateX(-80%);
-  transition: transform 420ms ease;
+  inset: 0;
+  border-radius: inherit;
+  /* the sweep is painted by moving the gradient inside a static box, so nothing
+     ever extends past the button's rounded edge and no clipping is needed —
+     overflow/clip-path would both cut off the offset focus ring */
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0));
+  background-repeat: no-repeat;
+  background-size: 60% 100%;
+  background-position: -70% 0;
+  transition: background-position 420ms ease;
   pointer-events: none;
 }
 
 .button:hover::before,
 .hud-chip:hover::before {
-  transform: translateX(60%);
+  background-position: 170% 0;
 }
 
 .button:hover,
 .hud-chip:hover {
-  transform: translateY(-2px) scale(1.01);
-  border-color: rgba(156, 214, 255, 0.9);
-  box-shadow: 0 25px 45px -20px rgba(156, 214, 255, 0.75);
+  border-color: rgba(158, 134, 255, 0.9);
+  box-shadow: 0 25px 45px -20px rgba(158, 134, 255, 0.75);
 }
 
+/* on press the border clears and the ring takes over, offset outward */
 .button:active,
 .hud-chip:active {
-  transform: translateY(1px) scale(0.99);
+  border-color: rgba(158, 134, 255, 0);
+  outline-color: rgba(158, 134, 255, 0.75);
+  outline-offset: 5px;
 }
 
 .start-btn {
@@ -296,7 +427,25 @@ header img {
   display: none;
 }
 
+/* a saved game is the single state that reveals the score row and the
+   continue button; JS only records the state, CSS decides how it looks */
+body[data-saved="true"] {
+  #continueBtn,
+  .score {
+    display: block;
+  }
+
+  .matchup-seam .seam-colon,
+  .matchup-seam::before {
+    opacity: 1;
+  }
+}
+
 .footer-panel {
+  padding: clamp(0.6rem, 1.2vw, 0.9rem) clamp(1.25rem, 3vw, 2rem);
+  position: sticky;
+  bottom: clamp(0.75rem, 2vw, 1.25rem);
+  z-index: 2;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -495,7 +644,8 @@ header img {
   letter-spacing: 0.05em;
 }
 
-dialog {
+/* the game's results dialog; the admin dialogs use .app-dialog */
+dialog.results {
   opacity: 0;
   transform: translateY(18px) scale(0.98);
   transition:
@@ -505,7 +655,7 @@ dialog {
     display var(--transition) allow-discrete;
 }
 
-dialog[open] {
+dialog.results[open] {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -521,12 +671,12 @@ dialog[open] {
   transform: translateY(0) scale(1);
 }
 
-dialog::backdrop {
+dialog.results::backdrop {
   background: radial-gradient(circle, rgba(12, 8, 33, 0.65), rgba(4, 2, 12, 0.9));
   backdrop-filter: blur(12px);
 }
 
-dialog button {
+dialog.results button {
   align-self: center;
   min-width: 140px;
 }
@@ -562,10 +712,6 @@ footer p {
     padding: clamp(1rem, 4vw, 2rem);
   }
 
-  .glass-panel {
-    padding: clamp(1.25rem, 4vw, 2rem);
-  }
-
   .button,
   .hud-chip {
     padding: 0.8rem 1.8rem;
@@ -574,6 +720,15 @@ footer p {
 
   .game-content {
     grid-template-columns: 1fr;
+  }
+
+  .matchup {
+    gap: 0.5rem;
+  }
+
+  .score,
+  .seam-colon {
+    font-size: clamp(2rem, 11vw, 3rem);
   }
 
   .team-title {
@@ -590,7 +745,6 @@ footer p {
 /* Admin page */
 
 body.words {
-  font-family: "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
   font-size: 5rem;
   display: flex;
   flex-direction: column;
@@ -598,120 +752,609 @@ body.words {
   justify-content: center;
   width: 100%;
   height: 100vh;
+  /* only the section scrolls; the page itself never does */
+  overflow: hidden;
   background-image: var(--bg-base), var(--bg-overlay);
   background-attachment: fixed;
   color: var(--text-primary);
+
+  /* the scroll container spans the full width so a drag anywhere on screen
+     scrolls the list rather than the page; padding recreates the inset that
+     a narrower section used to give */
+  section {
+    height: 100vh;
+    width: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem max(1.5rem, calc((100% - 960px) / 2)) 4rem;
+    gap: 1.5rem;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  ul {
+    list-style-type: none;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    /* claims the free space so a short (or filtered) list still pushes the
+       add form to the bottom instead of leaving it stranded mid-page */
+    flex: 1 0 auto;
+  }
+
+  /* an empty result is the useful answer here: the word is not in the list yet */
+  /* the copy lives in the markup, so it stays translatable and out of the CSS */
+  ul[data-empty="true"]::after {
+    content: attr(data-empty-text);
+    align-self: center;
+    flex: none;
+    padding: 3rem 1rem;
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    text-align: center;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+  }
+
+  /* li sets display: grid, which would otherwise beat [hidden]'s display: none */
+  li[hidden] {
+    display: none;
+  }
+
+  li {
+    display: grid;
+    /* the buttons keep their intrinsic size and stay paired at the right edge */
+    grid-template-columns: 1fr auto auto;
+    gap: 0.75rem;
+    align-items: center;
+    border-bottom: rgba(255, 255, 255, 0.35) 1px solid;
+    padding-bottom: 0.5rem;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  li p {
+    color: rgba(255, 255, 255, 0.85);
+    text-shadow: 0 0 24px rgba(255, 255, 255, 0.35);
+    letter-spacing: 0.35em;
+    font-size: clamp(2.5rem, 5vw, 3.75rem);
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  li button {
+    background-color: transparent;
+    font-size: 2rem;
+    color: rgba(255, 255, 255, 0.9);
+    height: 48px;
+    width: 48px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.38);
+    box-shadow: 0 0 18px -6px rgba(156, 214, 255, 0.6);
+    cursor: pointer;
+    outline: 1px solid rgba(158, 134, 255, 0);
+    outline-offset: 0;
+    transition:
+      background-color var(--transition),
+      box-shadow var(--transition),
+      border-color 110ms ease-in,
+      outline-color 170ms ease-out 110ms,
+      outline-offset 280ms cubic-bezier(0.22, 1, 0.36, 1);
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      border-color: rgba(158, 134, 255, 0.7);
+      box-shadow: 0 12px 28px -14px rgba(158, 134, 255, 0.75);
+    }
+
+    /* on press the border clears and the ring takes over, offset outward */
+    &:active {
+      border-color: rgba(158, 134, 255, 0);
+      outline-color: rgba(158, 134, 255, 0.75);
+      outline-offset: 5px;
+    }
+
+    &:focus-visible {
+      outline-color: rgba(158, 134, 255, 0.75);
+      outline-offset: 4px;
+    }
+  }
+
+  section form {
+    position: sticky;
+    bottom: 0.75rem;
+    width: min(820px, 100%);
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    background: rgba(24, 18, 46, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 20px 40px -24px rgba(10, 0, 40, 0.8);
+    backdrop-filter: blur(12px);
+    display: grid;
+    /* the button keeps its intrinsic 48px, the input takes the rest */
+    grid-template-columns: 1fr auto;
+    column-gap: 1rem;
+    align-items: center;
+    /* rises into place once the list behind it has painted */
+    animation: form-rise 420ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
+  }
+
+  section input {
+    height: 48px;
+    width: 100%;
+    background-color: transparent;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 0 1.25rem;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    /* the ring starts flush on the border. on press the two edges hand off in
+       sequence rather than crossfading: the border clears first, then the ring
+       arrives — so only one line is ever at full strength */
+    outline: 1px solid rgba(158, 134, 255, 0);
+    outline-offset: 0;
+    transition:
+      border-color 110ms ease-in,
+      outline-color 170ms ease-out 110ms,
+      outline-offset 280ms cubic-bezier(0.22, 1, 0.36, 1);
+
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+      letter-spacing: 0.2em;
+      transition: color var(--transition);
+    }
+
+    /* the prompt has done its job once the field is focused */
+    &:focus::placeholder {
+      color: rgba(255, 255, 255, 0);
+    }
+
+    &:focus {
+      /* picks up the violet of the adjacent + button, so the two controls
+         read as one pair rather than borrowing the blue link color */
+      border-color: rgba(158, 134, 255, 0.85);
+      outline-color: rgba(158, 134, 255, 0.5);
+    }
+
+    /* pressed state: the border has cleared and the ring carries the edge */
+    &:active {
+      border-color: rgba(158, 134, 255, 0);
+      outline-color: rgba(158, 134, 255, 0.75);
+      outline-offset: 5px;
+    }
+  }
+
+  section form button {
+    background: linear-gradient(135deg, rgba(126, 99, 255, 0.85), rgba(255, 129, 235, 0.45));
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 50%;
+    color: var(--text-primary);
+    height: 48px;
+    width: 48px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    line-height: 1;
+    font-size: 1.8rem;
+    cursor: pointer;
+    outline: 1px solid rgba(158, 134, 255, 0);
+    outline-offset: 0;
+    transition:
+      filter var(--transition),
+      border-color 110ms ease-in,
+      outline-color 170ms ease-out 110ms,
+      outline-offset 280ms cubic-bezier(0.22, 1, 0.36, 1);
+
+    &:hover {
+      filter: brightness(1.15);
+      border-color: rgba(255, 255, 255, 0.6);
+    }
+
+    /* on press the border clears and the ring takes over, offset outward */
+    &:active {
+      border-color: rgba(255, 255, 255, 0);
+      outline-color: rgba(158, 134, 255, 0.75);
+      outline-offset: 5px;
+    }
+
+    &:focus-visible {
+      outline-color: rgba(158, 134, 255, 0.75);
+      outline-offset: 5px;
+    }
+  }
 }
 
-body.words section {
-  height: 100vh;
-  width: min(960px, 100%);
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 2rem 1.5rem 6rem;
-  gap: 1.5rem;
-}
-
-body.words ul {
-  list-style-type: none;
-  width: 100%;
-  padding: 0;
+.app-dialog {
+  /* body.words is a flex container, so the dialog is centred against the
+     viewport instead — translate keeps the closing scale from re-resolving
+     flex centring and drifting sideways. the translate is part of the
+     transition, so the open/closed states must both carry it. */
+  position: fixed;
+  top: 50%;
+  left: 50%;
   margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-body.words li {
-  display: grid;
-  grid-template-columns: 6fr 1fr 1fr;
-  gap: 1rem;
-  align-items: center;
-  border-bottom: rgba(255, 255, 255, 0.35) 1px solid;
-  padding-bottom: 0.5rem;
-}
-
-body.words li p {
-  color: rgba(255, 255, 255, 0.85);
-  text-shadow: 0 0 24px rgba(255, 255, 255, 0.35);
-  letter-spacing: 0.35em;
-  font-size: clamp(2.5rem, 5vw, 3.75rem);
-  max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-body.words li button {
-  background-color: transparent;
-  font-size: 2rem;
-  color: rgba(255, 255, 255, 0.9);
-  height: 48px;
-  width: 48px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.38);
-  box-shadow: 0 0 18px -6px rgba(156, 214, 255, 0.6);
-  cursor: pointer;
-  transition: transform var(--transition), box-shadow var(--transition);
-}
-
-body.words li button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px -14px rgba(156, 214, 255, 0.75);
-}
-
-body.words li:last-child {
-  border-bottom: none;
-}
-
-body.words form {
-  position: sticky;
-  bottom: 2rem;
-  width: min(640px, 100%);
-  padding: 1.5rem;
+  height: fit-content;
+  max-height: calc(100% - 2rem);
+  /* showModal focuses the dialog itself, which would draw the UA focus ring */
+  outline: none;
+  /* nothing here is content to copy — it is all labels and controls */
+  user-select: none;
+  width: min(420px, calc(100% - 2rem));
+  padding: 2rem;
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
-  background: rgba(24, 18, 46, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 20px 40px -24px rgba(10, 0, 40, 0.8);
-  backdrop-filter: blur(20px);
-}
-
-body.words form-group {
-  display: grid;
-  grid-template-columns: 5fr 1fr;
-  column-gap: 1rem;
-  align-items: center;
-}
-
-body.words input {
-  height: 48px;
-  width: 100%;
-  background-color: transparent;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 0 1.25rem;
-  font-size: 1.5rem;
+  background: rgba(24, 18, 46, 0.85);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(32px) saturate(160%);
   color: var(--text-primary);
+  /* body.words sets 5rem for the word list, so reset to a readable base */
+  font-size: 1rem;
+  line-height: 1.5;
+  /* the centring transform is the SAME in every state. translate(-50%) resolves
+     against the unscaled width, so composing a scale with it drifts the box
+     sideways as it shrinks — the scale lives on the inner form instead. */
+  transform: translate(-50%, -50%);
+  /* closed state */
+  opacity: 0;
+  transition:
+    opacity var(--transition),
+    overlay var(--transition) allow-discrete,
+    display var(--transition) allow-discrete;
+
+  /* the dialog's own form carries no panel styling — the dialog is the panel */
+  form {
+    /* the dialog is a flex container, so the form would otherwise shrink-wrap
+       to its content and sit off-centre */
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    transform: translateY(12px) scale(0.97);
+    transition: transform var(--transition);
+  }
+
+  .confirm-emoji {
+    display: block;
+    font-size: 3rem;
+    line-height: 1;
+  }
+
+  /* the word or message is the one thing the user must read */
+  p {
+    max-width: 100%;
+    font-size: 1.6rem;
+    font-weight: 600;
+    text-align: center;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* a message wraps; a single word does not */
+  #noticeText {
+    font-size: 1.15rem;
+    white-space: normal;
+  }
+
+  input {
+    width: 100%;
+    height: 52px;
+    padding: 0 1.25rem;
+    font-size: 1.15rem;
+    text-align: center;
+    color: var(--text-primary);
+    border-radius: var(--radius-pill);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(12, 8, 33, 0.55);
+    outline: 1px solid rgba(158, 134, 255, 0);
+    outline-offset: 0;
+    transition:
+      border-color 110ms ease-in,
+      outline-color 170ms ease-out 110ms,
+      outline-offset 280ms cubic-bezier(0.22, 1, 0.36, 1);
+
+    &:focus {
+      border-color: rgba(158, 134, 255, 0.85);
+      outline-color: rgba(158, 134, 255, 0.5);
+    }
+
+    &:active {
+      border-color: rgba(158, 134, 255, 0);
+      outline-color: rgba(158, 134, 255, 0.75);
+      outline-offset: 5px;
+    }
+  }
+
+  /* the tremble runs only while the dialog is open, so it never competes with
+     the closing transform */
+  &#confirmDialog[open] #confirmWord,
+  &#confirmDialog:open #confirmWord {
+    /* the word trembles above the bin it is about to fall into */
+    animation: word-shake 1.4s ease-in-out infinite;
+  }
+
+  menu {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 0.5rem 0 0;
+    padding: 0;
+  }
+
+  menu button {
+    display: grid;
+    place-items: center;
+    /* fixed square box: flex must not stretch it and content must not grow it */
+    flex: 0 0 56px;
+    box-sizing: border-box;
+    height: 56px;
+    width: 56px;
+    min-width: 56px;
+    aspect-ratio: 1;
+    padding: 0;
+    font-size: 1rem;
+    line-height: 0;
+    color: var(--text-primary);
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.06);
+    cursor: pointer;
+    outline: 1px solid rgba(158, 134, 255, 0);
+    outline-offset: 0;
+    transition:
+      background var(--transition),
+      border-color 110ms ease-in,
+      outline-color 170ms ease-out 110ms,
+      outline-offset 280ms cubic-bezier(0.22, 1, 0.36, 1);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(158, 134, 255, 0.7);
+    }
+
+    /* on press the border clears and the ring takes over, offset outward */
+    &:active {
+      border-color: rgba(158, 134, 255, 0);
+      outline-color: rgba(158, 134, 255, 0.75);
+      outline-offset: 5px;
+    }
+
+    &:focus-visible {
+      outline-color: rgba(158, 134, 255, 0.75);
+      outline-offset: 4px;
+    }
+  }
+
+  /* delete is destructive, so it carries the warm accent */
+  menu .danger {
+    border-color: rgba(255, 139, 244, 0.45);
+    background: rgba(255, 139, 244, 0.16);
+
+    &:hover {
+      background: rgba(255, 139, 244, 0.28);
+      border-color: rgba(255, 139, 244, 0.7);
+    }
+
+    /* must restate the handoff, or the hover border above wins during a press */
+    &:active {
+      border-color: rgba(255, 139, 244, 0);
+      outline-color: rgba(255, 139, 244, 0.8);
+    }
+  }
+
+  /* the affirmative action, in the palette's violet rather than the warm accent */
+  menu .confirm {
+    border-color: rgba(158, 134, 255, 0.5);
+    background: rgba(158, 134, 255, 0.2);
+
+    &:hover {
+      background: rgba(158, 134, 255, 0.32);
+      border-color: rgba(158, 134, 255, 0.75);
+    }
+  }
 }
 
-body.words input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
-  letter-spacing: 0.2em;
+@keyframes form-rise {
+  from {
+    opacity: 0;
+    transform: translateY(calc(100% + 0.75rem));
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-body.words button {
-  background: linear-gradient(135deg, rgba(126, 99, 255, 0.85), rgba(255, 129, 235, 0.45));
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 50%;
-  color: var(--text-primary);
-  height: 48px;
-  width: 48px;
-  font-size: 1.8rem;
-  cursor: pointer;
+/* short rattle, then a long pause — a constant shake reads as a loading state */
+@keyframes word-shake {
+
+  0%,
+  60%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+
+  65% {
+    transform: translateX(-4px) rotate(-2.5deg);
+  }
+
+  72% {
+    transform: translateX(3px) rotate(2deg);
+  }
+
+  79% {
+    transform: translateX(-2.5px) rotate(-1.5deg);
+  }
+
+  86% {
+    transform: translateX(2px) rotate(1deg);
+  }
+
+  93% {
+    transform: translateX(-1px) rotate(-0.5deg);
+  }
 }
 
-body.words button:active {
-  transform: scale(0.96);
+@media (prefers-reduced-motion: reduce) {
+  .app-dialog #confirmWord {
+    animation: none;
+  }
+}
+
+.app-dialog[open],
+.app-dialog:open {
+  opacity: 1;
+}
+
+.app-dialog[open] form,
+.app-dialog:open form {
+  transform: translateY(0) scale(1);
+}
+
+/* must follow the open rule to take effect */
+@starting-style {
+
+  .app-dialog[open],
+  .app-dialog:open {
+    opacity: 0;
+  }
+
+  .app-dialog[open] form,
+  .app-dialog:open form {
+    transform: translateY(12px) scale(0.97);
+  }
+}
+
+.app-dialog::backdrop {
+  background: rgba(6, 2, 20, 0);
+  backdrop-filter: blur(0px);
+  transition:
+    background var(--transition),
+    backdrop-filter var(--transition),
+    overlay var(--transition) allow-discrete,
+    display var(--transition) allow-discrete;
+}
+
+/* [open] alongside :open — the attribute selector has the wider support */
+.app-dialog[open]::backdrop,
+.app-dialog:open::backdrop {
+  background: rgba(6, 2, 20, 0.65);
+  backdrop-filter: blur(8px);
+}
+
+@starting-style {
+
+  .app-dialog[open]::backdrop,
+  .app-dialog:open::backdrop {
+    background: rgba(6, 2, 20, 0);
+    backdrop-filter: blur(0px);
+  }
+}
+
+/* Admin page — phones */
+@media (max-width: 768px) {
+  body.words {
+    section {
+      padding: 1rem 1rem 2rem;
+      gap: 1rem;
+    }
+
+    ul {
+      gap: 0.5rem;
+    }
+
+    li {
+      /* the icon buttons shrink, so the word keeps as much room as possible */
+      gap: 0.4rem;
+      padding-bottom: 0.35rem;
+    }
+
+    li p {
+      /* 0.35em tracking is what forced words to truncate on narrow screens */
+      font-size: clamp(1.5rem, 7vw, 2.25rem);
+      letter-spacing: 0.12em;
+    }
+
+    li button {
+      height: 40px;
+      width: 40px;
+
+      svg {
+        width: 20px;
+        height: 20px;
+      }
+    }
+
+    ul[data-empty="true"]::after {
+      font-size: clamp(1.15rem, 5vw, 1.6rem);
+      padding: 2rem 0.5rem;
+    }
+
+    section form {
+      padding: 0.75rem;
+      column-gap: 0.5rem;
+      border-radius: var(--radius-md);
+    }
+
+    section input {
+      height: 44px;
+      /* 16px minimum, or iOS zooms the page on focus */
+      font-size: 1rem;
+      padding: 0 1rem;
+
+      &::placeholder {
+        letter-spacing: 0.08em;
+      }
+    }
+
+    section form button {
+      height: 44px;
+      width: 44px;
+      font-size: 1.5rem;
+    }
+  }
+
+  .app-dialog {
+    padding: 1.5rem;
+
+    p {
+      font-size: 1.3rem;
+    }
+
+    #noticeText {
+      font-size: 1.05rem;
+    }
+
+    .confirm-emoji {
+      font-size: 2.5rem;
+    }
+
+    input {
+      height: 48px;
+      /* 16px minimum, or iOS zooms the page on focus */
+      font-size: 1rem;
+    }
+
+    menu button {
+      flex: 0 0 50px;
+      height: 50px;
+      width: 50px;
+      min-width: 50px;
+    }
+  }
 }

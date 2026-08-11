@@ -11,25 +11,31 @@ async function refresh() {
   list.innerHTML = '';
   data.forEach((item) => {
     const li = document.createElement('li');
+    li.dataset.word = item.word.toLowerCase();
     const p = document.createElement('p');
     p.textContent = item.word;
     li.appendChild(p);
     const editBtn = document.createElement('button');
     editBtn.innerHTML = dots;
+    editBtn.title = 'Змінити';
+    editBtn.setAttribute('aria-label', `Змінити слово ${item.word}`);
     editBtn.onclick = async () => {
-      const updated = prompt('Edit word', item.word);
-      if (updated) {
+      const updated = await promptWord(item.word);
+      if (updated && updated !== item.word) {
         try {
           await dbUpdateWord(item.id, updated);
           refresh();
         } catch (e) {
-          alert('Word already exists');
+          notice('Таке слово вже є');
         }
       }
     };
     const delBtn = document.createElement('button');
     delBtn.innerHTML = svgCross;
+    delBtn.title = 'Видалити';
+    delBtn.setAttribute('aria-label', `Видалити слово ${item.word}`);
     delBtn.onclick = async () => {
+      if (!(await confirmDelete(item.word))) return;
       await dbDeleteWord(item.id);
       refresh();
     };
@@ -37,6 +43,52 @@ async function refresh() {
     li.appendChild(delBtn);
     list.appendChild(li);
   });
+  filterWords();
+}
+
+// typing in the add field narrows the list, so an existing word shows up before
+// the user bothers to submit it
+function filterWords() {
+  const query = document.getElementById('newWord').value.trim().toLowerCase();
+  const list = document.getElementById('words');
+  let shown = 0;
+  list.querySelectorAll('li').forEach((li) => {
+    const match = !query || li.dataset.word.includes(query);
+    li.hidden = !match;
+    if (match) shown += 1;
+  });
+  list.dataset.empty = query && shown === 0;
+}
+
+// the dialogs close themselves (method="dialog"), so this only reads the result
+function openDialog(id) {
+  const dialog = document.getElementById(id);
+  // returnValue survives the previous close, so a dismissal would otherwise
+  // report whatever button was pressed last time
+  dialog.returnValue = '';
+  dialog.showModal();
+  return new Promise((resolve) => {
+    dialog.addEventListener('close', () => resolve(dialog.returnValue), { once: true });
+  });
+}
+
+async function confirmDelete(word) {
+  document.getElementById('confirmWord').textContent = word;
+  return (await openDialog('confirmDialog')) === 'delete';
+}
+
+async function promptWord(word) {
+  const input = document.getElementById('editWord');
+  input.value = word;
+  const opened = openDialog('editDialog');
+  input.focus();
+  input.select();
+  return (await opened) === 'save' ? input.value.trim() : null;
+}
+
+async function notice(message) {
+  document.getElementById('noticeText').textContent = message;
+  await openDialog('noticeDialog');
 }
 
 async function addWord() {
@@ -48,7 +100,7 @@ async function addWord() {
       input.value = '';
       refresh();
     } catch (e) {
-      alert('Word already exists');
+      notice('Таке слово вже є');
     }
   }
 }

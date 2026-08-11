@@ -41,13 +41,15 @@ function onLaunch() {
   loadWords().then(() => {
     const team1 = localStorage.getItem('team1')
     const team2 = localStorage.getItem('team2')
-    if (team1 && team2) {
+    const saved = Boolean(team1 && team2)
+    document.body.dataset.saved = saved
+    if (saved) {
       window.team1Name.value = team1
       window.team2Name.value = team2
-      window.continueBtn.style.display = 'block'
+      window.team1Score.innerText = localStorage.getItem(`${team1}_score`) || 0
+      window.team2Score.innerText = localStorage.getItem(`${team2}_score`) || 0
     } else {
       setRandomNames()
-      window.continueBtn.style.display = 'none'
     }
   })
 }

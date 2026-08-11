@@ -12,7 +12,7 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
 </head>
 
-<body class="liquid-theme" onLoad="onLaunch()">
+<body class="liquid-theme home-screen" onLoad="onLaunch()">
   <div class="background-orbs" aria-hidden="true">
     <span class="orb orb-1"></span>
     <span class="orb orb-2"></span>
@@ -21,18 +21,20 @@
   <div class="container">
     <header>
       <img src="logo.png" height="200" id="logo" onclick="setRandomNames()" alt="Alias logo">
-      <p class="tagline">Грайте в оновленому скляному просторі Alias</p>
     </header>
     <main class="glass-panel home-panel">
-      <div class="team-form">
-        <div class="team-input">
-          <input type="text" id="team1Name" placeholder="Придумайте назву команди">
+      <div class="matchup" id="matchup">
+        <div class="matchup-side side-1">
+          <span class="score" id="team1Score"></span>
+          <input type="text" id="team1Name" aria-label="Назва першої команди" placeholder="Придумайте назву команди">
         </div>
-        <div class="team-input">
-          <input type="text" id="team2Name" placeholder="Придумайте назву команди">
-          <button class="button start-btn" onclick="startGame()">Почати!</button>
+        <span class="matchup-seam" aria-hidden="true"><span class="seam-colon">:</span></span>
+        <div class="matchup-side side-2">
+          <span class="score" id="team2Score"></span>
+          <input type="text" id="team2Name" aria-label="Назва другої команди" placeholder="Придумайте назву команди">
         </div>
       </div>
+      <button class="button start-btn" onclick="startGame()">Почати!</button>
       <button class="button" id="continueBtn" onclick="continueGame()">Продовжити!</button>
     </main>
     <footer class="glass-panel footer-panel">
