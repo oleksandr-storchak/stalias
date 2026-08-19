@@ -44,6 +44,15 @@ body {
   background: #03040e;
 }
 
+/* body is capped at the safe-area height, so its background stops short of the
+   home indicator. the gradient is pinned to the root instead, which
+   viewport-fit=cover extends to the physical screen edges */
+html {
+  background-color: #03040e;
+  background-image: var(--bg-base), var(--bg-overlay);
+  background-attachment: fixed;
+}
+
 body.liquid-theme {
   display: flex;
   align-items: center;
@@ -57,8 +66,7 @@ body.liquid-theme {
     calc(clamp(1.5rem, 3vw, 3.5rem) + env(safe-area-inset-right))
     calc(clamp(1.5rem, 3vw, 3.5rem) + env(safe-area-inset-bottom))
     calc(clamp(1.5rem, 3vw, 3.5rem) + env(safe-area-inset-left));
-  background-image: var(--bg-base), var(--bg-overlay);
-  background-attachment: fixed;
+  background: transparent;
 }
 
 /* the home screen is sized to fit, so any scroll is overscroll — lock both axes */
@@ -728,8 +736,7 @@ body.words {
   height: 100vh;
   /* only the section scrolls; the page itself never does */
   overflow: hidden;
-  background-image: var(--bg-base), var(--bg-overlay);
-  background-attachment: fixed;
+  background: transparent;
   color: var(--text-primary);
 
   /* the scroll container spans the full width so a drag anywhere on screen
