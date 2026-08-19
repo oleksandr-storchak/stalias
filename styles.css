@@ -46,13 +46,8 @@ body {
   background: #03040e;
 }
 
-/* body is capped at the safe-area height, so its background stops short of the
-   home indicator. the gradient is pinned to the root instead, which
-   viewport-fit=cover extends to the physical screen edges */
 html {
   background-color: #03040e;
-  background-image: var(--bg-base), var(--bg-overlay);
-  background-attachment: fixed;
 }
 
 body.liquid-theme {
@@ -97,6 +92,20 @@ body.liquid-theme::before {
 body.liquid-theme::after {
   background-image: var(--noise);
   opacity: 0.18;
+}
+
+/* the gradient rides on a fixed layer rather than on body's own background:
+   every height unit available to body (100%, dvh, vh) resolves against the
+   safe area in an installed PWA, which left a black band over the home
+   indicator. a fixed box's inset: 0 is measured from the viewport itself, so
+   viewport-fit=cover carries it to the physical screen edges */
+.page-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: #03040e;
+  background-image: var(--bg-base), var(--bg-overlay);
 }
 
 .background-orbs {
