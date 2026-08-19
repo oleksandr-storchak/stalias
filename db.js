@@ -22,30 +22,25 @@ function openDB() {
   });
 }
 
+// tops the store up rather than seeding only when empty: a dictionary that
+// grew after install would otherwise never reach anyone who already played,
+// and diffing against what is stored keeps their own added words untouched
 async function dbSeedWords() {
+  const existing = new Set((await dbGetAllWords()).map((item) => item.word));
+  const res = await fetch('words.json');
+  const words = await res.json();
+  const missing = words
+    .map((word) => word.trim().toLowerCase())
+    .filter((word) => word && !existing.has(word));
+  if (missing.length === 0) return;
+
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readonly');
+    const tx = db.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
-    const countRequest = store.count();
-    countRequest.onsuccess = async () => {
-      if (countRequest.result > 0) {
-        resolve();
-        return;
-      }
-      try {
-        const res = await fetch('words.json');
-        const words = await res.json();
-        const txAdd = db.transaction(STORE_NAME, 'readwrite');
-        const storeAdd = txAdd.objectStore(STORE_NAME);
-        words.forEach((word) => storeAdd.add({ word: word.trim().toLowerCase() }));
-        txAdd.oncomplete = () => resolve();
-        txAdd.onerror = () => reject(txAdd.error);
-      } catch (e) {
-        reject(e);
-      }
-    };
-    countRequest.onerror = () => reject(countRequest.error);
+    missing.forEach((word) => store.add({ word }));
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
   });
 }
 
