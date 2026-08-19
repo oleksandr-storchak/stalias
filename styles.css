@@ -44,10 +44,6 @@ body {
   background: #03040e;
 }
 
-html {
-  background-color: #03040e;
-}
-
 body.liquid-theme {
   display: flex;
   align-items: center;
@@ -55,7 +51,8 @@ body.liquid-theme {
   position: relative;
   overflow-x: hidden;
   min-height: 100vh;
-  background: transparent;
+  background-image: var(--bg-base), var(--bg-overlay);
+  background-attachment: fixed;
 }
 
 /* the home screen is sized to fit, so any scroll is overscroll — lock both axes */
@@ -83,20 +80,6 @@ body.liquid-theme::before {
 body.liquid-theme::after {
   background-image: var(--noise);
   opacity: 0.18;
-}
-
-/* the gradient rides on a fixed layer rather than on body's own background:
-   every height unit available to body (100%, dvh, vh) resolves against the
-   safe area in an installed PWA, which left a black band over the home
-   indicator. a fixed box's inset: 0 is measured from the viewport itself, so
-   viewport-fit=cover carries it to the physical screen edges */
-.page-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-color: #03040e;
-  background-image: var(--bg-base), var(--bg-overlay);
 }
 
 .background-orbs {
@@ -152,9 +135,8 @@ body.liquid-theme::after {
   gap: clamp(1.75rem, 4vh, 3.5rem);
   /* fills the screen so the footer has a bottom to sit against */
   min-height: 100%;
-  /* the insets live here, not on body: body has to stay a plain full-viewport
-     box so its background reaches the physical screen edges, the way the admin
-     page keeps its padding on <section> */
+  /* the safe-area insets belong on the inner column: padding on body would push
+     it past the viewport and cut its background off above the home indicator */
   padding: calc(clamp(1.5rem, 3vw, 3.5rem) + env(safe-area-inset-top))
     calc(clamp(1.5rem, 3vw, 3.5rem) + env(safe-area-inset-right))
     calc(clamp(1.5rem, 3vw, 3.5rem) + env(safe-area-inset-bottom))
@@ -745,7 +727,8 @@ body.words {
   height: 100vh;
   /* only the section scrolls; the page itself never does */
   overflow: hidden;
-  background: transparent;
+  background-image: var(--bg-base), var(--bg-overlay);
+  background-attachment: fixed;
   color: var(--text-primary);
 
   /* the scroll container spans the full width so a drag anywhere on screen
