@@ -23,6 +23,7 @@ async function loadWords() {
   await dbSeedWords();
   const all = await dbGetAllWords();
   words = all.map(w => w.word);
+  window.wordsLink.dataset.count = all.length
 }
 
 function getRandomTeamName() {
@@ -84,6 +85,18 @@ function showScreen(id) {
     left: id === 'gameScreen' ? window.screenTrack.clientWidth : 0,
     behavior: 'smooth'
   })
+}
+
+// on the game screen the logo is a way back home between turns; the saved game
+// stays put, so "Продовжити!" picks it up again. during a live turn it keeps
+// its home-screen job of shuffling the team names rather than dropping the turn
+function onLogoClick() {
+  const onGameScreen = window.screenTrack.scrollLeft > window.screenTrack.clientWidth / 2
+  if (onGameScreen) {
+    if (!window.started) showScreen('homeScreen')
+    return
+  }
+  setRandomNames()
 }
 
 function continueGame() {

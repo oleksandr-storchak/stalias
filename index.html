@@ -3,7 +3,12 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <!-- iOS otherwise reserves an opaque bar above the page; translucent lets the
+       gradient run to the top edge, and the safe-area insets keep content clear -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#03040e">
   <title>Alias</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="manifest" href="manifest.json">
@@ -20,7 +25,7 @@
   </div>
   <div class="container">
     <header>
-      <img src="logo.png" height="200" id="logo" onclick="setRandomNames()" alt="Alias logo">
+      <img src="logo.png" height="200" id="logo" onclick="onLogoClick()" alt="Alias logo">
     </header>
     <!-- both screens live on one snap track, so moving between them is a slide
          rather than a page load; scrolling is driven only by the buttons -->
@@ -89,7 +94,7 @@
     </div>
     <footer class="glass-panel footer-panel">
       <p id="copyright"></p>
-      <a href="admin.html">Адмін</a>
+      <a href="admin.html" id="wordsLink">Слова</a>
     </footer>
   </div>
   <dialog class="app-dialog results" id="results" aria-labelledby="resultsTitle">

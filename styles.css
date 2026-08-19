@@ -51,7 +51,12 @@ body.liquid-theme {
   position: relative;
   overflow-x: hidden;
   min-height: 100vh;
-  padding: clamp(1.5rem, 3vw, 3.5rem);
+  /* viewport-fit=cover runs the gradient under the status bar; the insets are
+     what keep the logo and footer out from under the clock and home indicator */
+  padding: calc(clamp(1.5rem, 3vw, 3.5rem) + env(safe-area-inset-top))
+    calc(clamp(1.5rem, 3vw, 3.5rem) + env(safe-area-inset-right))
+    calc(clamp(1.5rem, 3vw, 3.5rem) + env(safe-area-inset-bottom))
+    calc(clamp(1.5rem, 3vw, 3.5rem) + env(safe-area-inset-left));
   background-image: var(--bg-base), var(--bg-overlay);
   background-attachment: fixed;
 }
@@ -483,6 +488,12 @@ body[data-saved="true"] {
   text-shadow: 0 0 18px rgba(156, 214, 255, 0.75);
 }
 
+/* the label is plain HTML; the count arrives as data-count once the dictionary
+   loads, so the link never renders an empty pair of brackets */
+#wordsLink[data-count]::after {
+  content: " (" attr(data-count) ")";
+}
+
 .game-panel {
   display: flex;
   flex-direction: column;
@@ -732,7 +743,8 @@ body.words {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 2rem max(1.5rem, calc((100% - 960px) / 2)) 4rem;
+    padding: calc(2rem + env(safe-area-inset-top)) max(1.5rem, calc((100% - 960px) / 2))
+      calc(4rem + env(safe-area-inset-bottom));
     gap: 1.5rem;
     scrollbar-width: none;
 
@@ -770,6 +782,13 @@ body.words {
   /* li sets display: grid, which would otherwise beat [hidden]'s display: none */
   li[hidden] {
     display: none;
+  }
+
+  /* a freshly added word lands anywhere in the sorted list, so it announces
+     itself with a double pop instead of relying on the scroll alone */
+  li.is-new p {
+    animation: wordPop 900ms ease-in-out 2;
+    transform-origin: left center;
   }
 
   li {
@@ -1233,7 +1252,7 @@ body.words {
 @media (max-width: 768px) {
   body.words {
     section {
-      padding: 1rem 1rem 2rem;
+      padding: calc(1rem + env(safe-area-inset-top)) 1rem calc(2rem + env(safe-area-inset-bottom));
       gap: 1rem;
     }
 
@@ -1320,4 +1339,12 @@ body.words {
       min-width: 50px;
     }
   }
+}
+
+/* starts and ends at rest, so the two runs read as one continuous swell rather
+   than a jump back to the start between them */
+@keyframes wordPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
 }
