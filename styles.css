@@ -25,7 +25,9 @@
 
 html,
 body {
-  height: 100%;
+  /* 100dvh rather than 100%: with viewport-fit=cover the percentage resolves
+     against the safe area, which cut the gradient off above the home indicator */
+  height: 100dvh;
   /* the gradient backdrop reads as one surface, so no scrollbar interrupts it */
   scrollbar-width: none;
   /* stops the rubber-band bounce that exposes the page behind the gradient */
@@ -59,7 +61,7 @@ body.liquid-theme {
   justify-content: center;
   position: relative;
   overflow-x: hidden;
-  min-height: 100vh;
+  min-height: 100dvh;
   /* viewport-fit=cover runs the gradient under the status bar; the insets are
      what keep the logo and footer out from under the clock and home indicator */
   padding: calc(clamp(1.5rem, 3vw, 3.5rem) + env(safe-area-inset-top))
@@ -72,8 +74,8 @@ body.liquid-theme {
 /* the home screen is sized to fit, so any scroll is overscroll — lock both axes */
 body.home-screen {
   overflow: hidden;
-  height: 100%;
-  min-height: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
   touch-action: pan-x pan-y;
 }
 

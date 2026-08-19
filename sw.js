@@ -1,6 +1,6 @@
 // bump on every deploy: the activate handler deletes every cache that is not
 // this one, so a new version wipes the old files outright
-const CACHE_NAME = 'st-alias-pwa-v20'
+const CACHE_NAME = 'st-alias-pwa-v21'
 const urlsToCache = ['index.html', 'admin.html', 'styles.css', 'scripts.js', 'admin.js', 'db.js', 'words.json', 'manifest.json', 'favicon.png', 'logo.png']
 
 self.addEventListener('install', (event) => {
